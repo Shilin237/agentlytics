@@ -180,11 +180,6 @@ export default function Dashboard({ overview }) {
             )
           })}
         </div>
-        {/* Date range filter */}
-        <div className="mt-3 pt-3" style={{ borderTop: '1px solid var(--c-border)' }}>
-          <DateRangePicker value={dateRange} onChange={setDateRange} />
-        </div>
-
         {selectedEditor && sel && (
           <div className="mt-3 flex items-center gap-2">
             <button onClick={() => navigate(`/sessions?editor=${selectedEditor}`)} className="flex items-center gap-1 text-[11px] px-2.5 py-1 transition" style={{ color: 'var(--c-accent)', border: '1px solid var(--c-border)' }}>
@@ -199,6 +194,12 @@ export default function Dashboard({ overview }) {
             </span>
           </div>
         )}
+      </div>
+
+      {/* Date range filter bar */}
+      <div className="card px-3 py-2 flex items-center gap-2">
+        <span className="text-[10px] uppercase tracking-wider mr-1" style={{ color: 'var(--c-text3)' }}>period</span>
+        <DateRangePicker value={dateRange} onChange={setDateRange} />
       </div>
 
       {/* KPIs row 1: Core stats */}
