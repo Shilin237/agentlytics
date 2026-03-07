@@ -2,7 +2,7 @@ const Database = require('better-sqlite3');
 const path = require('path');
 const os = require('os');
 const fs = require('fs');
-const { getAllChats, getMessages, findChat: findChatRaw } = require('./editors');
+const { getAllChats, getMessages, findChat: findChatRaw, resetCaches } = require('./editors');
 
 const CACHE_DIR = path.join(os.homedir(), '.agentlytics');
 const CACHE_DB = path.join(CACHE_DIR, 'cache.db');
@@ -190,7 +190,9 @@ function analyzeAndStore(chat) {
   );
 }
 
-function scanAll(onProgress) {
+function scanAll(onProgress, opts = {}) {
+  const force = opts.force || false;
+  if (force || opts.resetCaches) resetCaches();
   const chats = getAllChats();
   const total = chats.length;
   let scanned = 0;
@@ -199,8 +201,8 @@ function scanAll(onProgress) {
 
   // Check which chats need updating
   const existing = {};
-  for (const row of db.prepare('SELECT id, last_updated_at FROM chats').all()) {
-    existing[row.id] = row.last_updated_at;
+  for (const row of db.prepare('SELECT id, last_updated_at, bubble_count FROM chats').all()) {
+    existing[row.id] = { ts: row.last_updated_at, bc: row.bubble_count };
   }
 
   const ins = insertChat();
@@ -224,11 +226,14 @@ function scanAll(onProgress) {
   // Analyze messages for chats that are new or updated
   for (const chat of chats) {
     scanned++;
-    const cachedTs = existing[chat.composerId];
     const chatTs = chat.lastUpdatedAt || chat.createdAt || 0;
 
-    // Skip if already cached and not updated
-    if (cachedTs && cachedTs >= chatTs) {
+    // Skip if already cached and not updated (unless force rescan)
+    const cached = existing[chat.composerId];
+    const cachedTs = cached ? cached.ts : null;
+    const cachedBc = cached ? cached.bc : null;
+    const chatBc = chat.bubbleCount || 0;
+    if (!force && cachedTs && cachedTs >= chatTs && cachedBc >= chatBc) {
       // Check if stats exist
       const hasStat = db.prepare('SELECT 1 FROM chat_stats WHERE chat_id = ?').get(chat.composerId);
       if (hasStat) {

@@ -32,6 +32,12 @@ if (isRelay) {
   wireMcpToExpress(app, getRelayDb);
   console.log(chalk.green('  ✓ MCP server registered'));
 
+  if (process.env.RELAY_PASSWORD) {
+    console.log(chalk.green('  ✓ Password protection enabled'));
+  } else {
+    console.log(chalk.yellow('  ⚠ No password set (set RELAY_PASSWORD env to protect)'));
+  }
+
   app.listen(RELAY_PORT, () => {
     const localIp = getLocalIp();
     const relayUrl = `http://${localIp}:${RELAY_PORT}`;
@@ -64,21 +70,43 @@ if (isRelay) {
 
 // ── Join mode ────────────────────────────────────────────────
 if (isJoin) {
-  const relayAddress = process.argv[joinIndex + 1];
-  const usernameIndex = process.argv.indexOf('--username');
-  const username = usernameIndex !== -1 ? process.argv[usernameIndex + 1] : null;
+  (async () => {
+    const relayAddress = process.argv[joinIndex + 1];
+    const usernameIndex = process.argv.indexOf('--username');
+    let username = usernameIndex !== -1 ? process.argv[usernameIndex + 1] : null;
 
-  if (!relayAddress) {
-    console.error(chalk.red('\n  ✗ Missing relay address. Usage: npx agentlytics --join <host:port> --username <name>\n'));
-    process.exit(1);
-  }
-  if (!username) {
-    console.error(chalk.red('\n  ✗ Missing username. Usage: npx agentlytics --join <host:port> --username <name>\n'));
-    process.exit(1);
-  }
+    if (!relayAddress) {
+      console.error(chalk.red('\n  ✗ Missing relay address. Usage: npx agentlytics --join <host:port> --username <name>\n'));
+      process.exit(1);
+    }
 
-  const { startJoinClient } = require('./relay-client');
-  startJoinClient(relayAddress, username);
+    // Auto-detect username from git config if not provided
+    if (!username) {
+      try {
+        const gitEmail = execSync('git config user.email', { encoding: 'utf-8' }).trim();
+        if (gitEmail) username = gitEmail;
+      } catch {}
+    }
+
+    // If still no username, ask interactively
+    if (!username) {
+      const readline = require('readline');
+      const rl = readline.createInterface({ input: process.stdin, output: process.stdout });
+      username = await new Promise(r => {
+        rl.question(chalk.bold('\n  Enter your username: '), (answer) => {
+          rl.close();
+          r(answer.trim());
+        });
+      });
+      if (!username) {
+        console.error(chalk.red('\n  ✗ Username is required.\n'));
+        process.exit(1);
+      }
+    }
+
+    const { startJoinClient } = require('./relay-client');
+    startJoinClient(relayAddress, username);
+  })();
 
   // Skip the rest of the normal flow
   return;

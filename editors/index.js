@@ -54,4 +54,10 @@ function findChat(idPrefix) {
   return chats.find((c) => c.composerId.startsWith(idPrefix));
 }
 
-module.exports = { getAllChats, getMessages, findChat, editors };
+function resetCaches() {
+  for (const editor of editors) {
+    if (typeof editor.resetCache === 'function') editor.resetCache();
+  }
+}
+
+module.exports = { getAllChats, getMessages, findChat, editors, resetCaches };

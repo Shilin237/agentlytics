@@ -9,6 +9,7 @@ import DateRangePicker from '../components/DateRangePicker'
 import { editorColor, editorLabel, formatNumber, dateRangeToApiParams } from '../lib/constants'
 import { fetchDailyActivity, fetchOverview as fetchOverviewApi, fetchDashboardStats, fetchShareImage } from '../lib/api'
 import { useTheme } from '../lib/theme'
+import SectionTitle from '../components/SectionTitle'
 
 ChartJS.register(ArcElement, Tooltip, Legend, CategoryScale, LinearScale, BarElement, PointElement, LineElement, Filler)
 
@@ -18,10 +19,6 @@ const WEEKDAY_LABELS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat']
 const MODE_COLORS = {
   agent: '#a855f7', chat: '#3b82f6', cascade: '#06b6d4', edit: '#10b981',
   copilot: '#f59e0b', thread: '#ec4899', opencode: '#f43f5e', claude: '#f97316',
-}
-
-function SectionTitle({ children }) {
-  return <h3 className="text-[10px] font-medium uppercase tracking-wider mb-2" style={{ color: 'var(--c-text2)' }}>{children}</h3>
 }
 
 export default function Dashboard({ overview }) {

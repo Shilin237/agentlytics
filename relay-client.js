@@ -5,10 +5,29 @@ const path = require('path');
 const os = require('os');
 const fs = require('fs');
 const readline = require('readline');
+const crypto = require('crypto');
 
 const cache = require('./cache');
 
 const SYNC_INTERVAL_MS = 30000; // 30 seconds
+
+const EDITOR_LABELS = {
+  'cursor': 'Cursor',
+  'windsurf': 'Windsurf',
+  'windsurf-next': 'Windsurf Next',
+  'antigravity': 'Antigravity',
+  'claude-code': 'Claude Code',
+  'claude': 'Claude Code',
+  'vscode': 'VS Code',
+  'vscode-insiders': 'VS Code Insiders',
+  'zed': 'Zed',
+  'opencode': 'OpenCode',
+  'codex': 'Codex CLI',
+  'gemini-cli': 'Gemini CLI',
+  'copilot-cli': 'Copilot CLI',
+  'cursor-agent': 'Cursor (Background Agent)',
+  'commandcode': 'CommandCode',
+};
 
 /**
  * Interactive project picker using readline (no external deps beyond Node built-ins).
@@ -33,6 +52,37 @@ async function pickProjects() {
     process.exit(1);
   }
 
+  const cwd = process.cwd();
+  const cwdMatch = projects.find(p => p.folder === cwd);
+
+  // If cwd is a known project, offer quick share
+  if (cwdMatch) {
+    const name = cwdMatch.folder.split('/').pop();
+    const editors = db.prepare(`
+      SELECT source, COUNT(*) as count FROM chats
+      WHERE folder = ? AND source IS NOT NULL
+      GROUP BY source ORDER BY count DESC
+    `).all(cwdMatch.folder);
+    console.log('');
+    console.log(chalk.cyan(`    ${name}`) + chalk.dim(` — ${cwdMatch.count} sessions`));
+    for (const e of editors) {
+      console.log(chalk.yellow(`      • ${EDITOR_LABELS[e.source] || e.source}`) + chalk.dim(` (${e.count} sessions)`));
+    }
+    console.log('');
+
+    const rl = readline.createInterface({ input: process.stdin, output: process.stdout });
+    const answer = await new Promise(r => {
+      rl.question(chalk.bold('  Share your sessions with your team? ') + chalk.dim('(Y/n) '), r);
+    });
+    rl.close();
+
+    const trimmed = answer.trim().toLowerCase();
+    if (trimmed === '' || trimmed === 'y' || trimmed === 'yes') {
+      return [cwdMatch.folder];
+    }
+    // Fall through to full picker
+  }
+
   console.log('');
   console.log(chalk.bold('  Select projects to share (comma-separated numbers, or "all"):'));
   console.log('');
@@ -42,11 +92,11 @@ async function pickProjects() {
   });
   console.log('');
 
-  const rl = readline.createInterface({ input: process.stdin, output: process.stdout });
+  const rl2 = readline.createInterface({ input: process.stdin, output: process.stdout });
 
   return new Promise((resolve) => {
-    rl.question(chalk.bold('  > '), (answer) => {
-      rl.close();
+    rl2.question(chalk.bold('  > '), (answer) => {
+      rl2.close();
       const trimmed = answer.trim().toLowerCase();
       if (trimmed === 'all' || trimmed === '*') {
         resolve(projects.map(p => p.folder));
@@ -131,7 +181,7 @@ function collectProjectData(selectedFolders) {
 /**
  * POST data to relay server.
  */
-function postToRelay(host, port, username, data) {
+function postToRelay(host, port, username, data, authToken) {
   return new Promise((resolve, reject) => {
     const payload = JSON.stringify({
       username,
@@ -141,15 +191,18 @@ function postToRelay(host, port, username, data) {
       stats: data.stats,
     });
 
+    const headers = {
+      'Content-Type': 'application/json',
+      'Content-Length': Buffer.byteLength(payload),
+    };
+    if (authToken) headers['Authorization'] = `Bearer ${authToken}`;
+
     const options = {
       hostname: host,
       port: port,
       path: '/relay/sync',
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Content-Length': Buffer.byteLength(payload),
-      },
+      headers,
     };
 
     const req = http.request(options, (res) => {
@@ -188,11 +241,22 @@ async function startJoinClient(relayAddress, username) {
   const host = parts[0] || 'localhost';
   const port = parseInt(parts[1]) || 4638;
 
+  // Auth token from RELAY_PASSWORD env
+  const relayPassword = process.env.RELAY_PASSWORD || null;
+  const authToken = relayPassword
+    ? crypto.createHmac('sha256', 'agentlytics-relay').update(relayPassword).digest('hex')
+    : null;
+
   // Test connection
   try {
-    const testResult = await postToRelay(host, port, username, { projects: [], chats: [], messages: [], stats: [] });
+    const testResult = await postToRelay(host, port, username, { projects: [], chats: [], messages: [], stats: [] }, authToken);
     if (!testResult.ok) {
-      console.log(chalk.red(`  ✗ Failed to connect: ${testResult.error || 'unknown error'}`));
+      const msg = testResult.error || 'unknown error';
+      if (msg === 'Unauthorized') {
+        console.log(chalk.red('  ✗ Relay requires a password. Set RELAY_PASSWORD env variable.'));
+      } else {
+        console.log(chalk.red(`  ✗ Failed to connect: ${msg}`));
+      }
       process.exit(1);
     }
     console.log(chalk.green('  ✓ Connected to relay'));
@@ -214,9 +278,11 @@ async function startJoinClient(relayAddress, username) {
   // Initial sync
   async function sync() {
     try {
+      // Rescan editors to pick up new/updated sessions (reset caches so fresh LS data is obtained)
+      cache.scanAll(() => {}, { resetCaches: true });
       const data = collectProjectData(selectedFolders);
       data.projects = selectedFolders;
-      const result = await postToRelay(host, port, username, data);
+      const result = await postToRelay(host, port, username, data, authToken);
       if (result.ok) {
         const s = result.synced || {};
         process.stdout.write(chalk.dim(`\r  ⟳ Synced: ${s.chats || 0} chats, ${s.messages || 0} messages — ${new Date().toLocaleTimeString()}    `));
