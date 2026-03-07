@@ -1,9 +1,9 @@
 import { useState, useEffect } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
-import { ArrowLeft, User, Bot, Wrench, Settings, Play, CheckCircle, ChevronRight, ChevronDown } from 'lucide-react'
+import { ArrowLeft, User, Bot, Wrench, Settings, Play, CheckCircle, ChevronRight, ChevronDown, Download } from 'lucide-react'
 import ReactMarkdown from 'react-markdown'
 import remarkGfm from 'remark-gfm'
-import { fetchChat } from '../lib/api'
+import { fetchChat, BASE } from '../lib/api'
 import { editorColor, editorLabel, formatDateTime, formatNumber } from '../lib/constants'
 import KpiCard from '../components/KpiCard'
 
@@ -184,7 +184,7 @@ export default function ChatDetail() {
       {/* Header */}
       <div className="card p-5 mb-4">
         <div className="flex items-start justify-between">
-          <div>
+          <div className="flex-1 min-w-0">
             <h2 className="text-xl font-semibold mb-1" style={{ color: 'var(--c-white)' }}>{chat.name || '(untitled)'}</h2>
             <div className="flex items-center gap-3 text-xs" style={{ color: 'var(--c-text2)' }}>
               <span className="inline-flex items-center gap-1.5">
@@ -200,6 +200,16 @@ export default function ChatDetail() {
               <span className="ml-3 font-mono" style={{ color: 'var(--c-text3)' }}>{chat.id}</span>
             </div>
           </div>
+          <a
+            href={`${BASE}/api/chats/${chat.id}/markdown`}
+            download
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded text-xs font-medium transition shrink-0"
+            style={{ background: 'var(--c-bg3)', color: 'var(--c-text)', border: '1px solid var(--c-border)' }}
+            onMouseEnter={e => e.currentTarget.style.background = 'var(--c-bg2)'}
+            onMouseLeave={e => e.currentTarget.style.background = 'var(--c-bg3)'}
+          >
+            <Download size={13} /> Export .md
+          </a>
         </div>
       </div>
 

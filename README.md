@@ -6,12 +6,12 @@
 
 <p align="center">
   <strong>Unified analytics for your AI coding agents</strong><br>
-  <sub>Cursor · Windsurf · Claude Code · VS Code Copilot · Zed · Antigravity · OpenCode · Gemini CLI · Copilot CLI</sub>
+  <sub>Cursor · Windsurf · Claude Code · VS Code Copilot · Zed · Antigravity · OpenCode · Gemini CLI · Copilot CLI · Cursor Agent</sub>
 </p>
 
 <p align="center">
   <a href="https://www.npmjs.com/package/agentlytics"><img src="https://img.shields.io/npm/v/agentlytics?color=6366f1&label=npm" alt="npm"></a>
-  <a href="#supported-editors"><img src="https://img.shields.io/badge/editors-11-818cf8" alt="editors"></a>
+  <a href="#supported-editors"><img src="https://img.shields.io/badge/editors-12-818cf8" alt="editors"></a>
   <a href="#license"><img src="https://img.shields.io/badge/license-MIT-green" alt="license"></a>
   <a href="https://nodejs.org"><img src="https://img.shields.io/badge/node-%E2%89%A518-brightgreen" alt="node"></a>
 </p>
@@ -56,6 +56,7 @@ Opens at **http://localhost:4637**. Requires Node.js ≥ 18, macOS.
 | **OpenCode** | `opencode` | ✅ | ✅ | ✅ | ✅ |
 | **Gemini CLI** | `gemini-cli` | ✅ | ✅ | ✅ | ✅ |
 | **Copilot CLI** | `copilot-cli` | ✅ | ✅ | ✅ | ✅ |
+| **Cursor Agent** | `cursor-agent` | ✅ | ❌ | ❌ | ❌ |
 
 > Windsurf, Windsurf Next, and Antigravity must be running during scan.
 

@@ -1,6 +1,7 @@
 const express = require('express');
 const path = require('path');
 const cache = require('./cache');
+const { generateShareSvg } = require('./share-image');
 
 const app = express();
 app.use(express.json());
@@ -72,6 +73,51 @@ app.get('/api/chats/:id', (req, res) => {
     const result = cache.getCachedChat(req.params.id);
     if (!result) return res.status(404).json({ error: 'Chat not found' });
     res.json(result);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.get('/api/chats/:id/markdown', (req, res) => {
+  try {
+    const result = cache.getCachedChat(req.params.id);
+    if (!result) return res.status(404).json({ error: 'Chat not found' });
+
+    const lines = [];
+    const title = result.name || 'Untitled Session';
+    lines.push(`# ${title}\n`);
+
+    // Metadata
+    const meta = [];
+    if (result.source) meta.push(`**Editor:** ${result.source}`);
+    if (result.mode) meta.push(`**Mode:** ${result.mode}`);
+    if (result.folder) meta.push(`**Project:** ${result.folder}`);
+    if (result.createdAt) meta.push(`**Created:** ${new Date(result.createdAt).toISOString()}`);
+    if (result.lastUpdatedAt) meta.push(`**Updated:** ${new Date(result.lastUpdatedAt).toISOString()}`);
+    if (result.stats) {
+      meta.push(`**Messages:** ${result.stats.totalMessages}`);
+      if (result.stats.totalInputTokens) meta.push(`**Input Tokens:** ${result.stats.totalInputTokens}`);
+      if (result.stats.totalOutputTokens) meta.push(`**Output Tokens:** ${result.stats.totalOutputTokens}`);
+      const models = [...new Set(result.stats.models || [])];
+      if (models.length > 0) meta.push(`**Models:** ${models.join(', ')}`);
+    }
+    if (meta.length > 0) lines.push(meta.join('  \n') + '\n');
+
+    lines.push('---\n');
+
+    // Messages
+    for (const msg of result.messages) {
+      const label = msg.role === 'user' ? '## User' : msg.role === 'assistant' ? '## Assistant' : `## ${msg.role.charAt(0).toUpperCase() + msg.role.slice(1)}`;
+      const modelTag = msg.model ? ` *(${msg.model})*` : '';
+      lines.push(`${label}${modelTag}\n`);
+      lines.push(msg.content + '\n');
+    }
+
+    const md = lines.join('\n');
+    const filename = title.replace(/[^a-zA-Z0-9_-]/g, '_').substring(0, 80) + '.md';
+    res.setHeader('Content-Type', 'text/markdown; charset=utf-8');
+    res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
+    res.send(md);
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
@@ -155,6 +201,19 @@ app.get('/api/schema', (req, res) => {
     res.json({ tables: tables.map(t => t.name), schema });
   } catch (err) {
     res.status(500).json({ error: err.message });
+  }
+});
+
+app.get('/api/share-image', (req, res) => {
+  try {
+    const overview = cache.getCachedOverview();
+    const stats = cache.getCachedDashboardStats();
+    const svg = generateShareSvg(overview, stats);
+    res.setHeader('Content-Type', 'image/svg+xml');
+    res.send(svg);
+  } catch (err) {
+    console.error('Share image error:', err);
+    res.status(500).json({ error: err.message, stack: err.stack });
   }
 });
 

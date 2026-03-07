@@ -1,4 +1,4 @@
-const BASE = '';
+export const BASE = '';
 
 // Append optional dateFrom/dateTo (ms timestamps) to URLSearchParams
 function appendDateParams(q, params) {
@@ -95,6 +95,11 @@ export async function executeQuery(sql) {
 export async function fetchSchema() {
   const res = await fetch(`${BASE}/api/schema`);
   return res.json();
+}
+
+export async function fetchShareImage() {
+  const res = await fetch(`${BASE}/api/share-image`);
+  return res.text();
 }
 
 export async function fetchToolCalls(name, opts = {}) {
