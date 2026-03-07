@@ -217,6 +217,31 @@ Aggregated tool call frequency, model distribution, and token breakdown.
 
 ---
 
+## `GET /api/costs`
+
+Estimated API costs based on token usage and model pricing.
+
+**Query params:**
+- `editor` — filter by editor source
+- `folder` — filter by project directory
+- `chatId` — filter by specific chat session
+- `dateFrom` / `dateTo` — Unix ms timestamps
+
+**Response:**
+
+```json
+{
+  "totalCost": 12.45,
+  "byModel": [
+    { "model": "claude-sonnet-4-20250514", "inputTokens": 5000000, "outputTokens": 2000000, "cacheRead": 800000, "cacheWrite": 100000, "cost": 10.50 },
+    { "model": "gpt-4o", "inputTokens": 500000, "outputTokens": 200000, "cacheRead": 0, "cacheWrite": 0, "cost": 1.95 }
+  ],
+  "unknownModels": ["custom-model-v1"]
+}
+```
+
+---
+
 ## `GET /api/tool-calls`
 
 Individual tool call instances for a specific tool.

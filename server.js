@@ -159,6 +159,20 @@ app.get('/api/dashboard-stats', (req, res) => {
   }
 });
 
+app.get('/api/costs', (req, res) => {
+  try {
+    const opts = {
+      editor: req.query.editor || null,
+      folder: req.query.folder || null,
+      chatId: req.query.chatId || null,
+      ...parseDateOpts(req.query),
+    };
+    res.json(cache.getCostBreakdown(opts));
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
 app.get('/api/tool-calls', (req, res) => {
   try {
     const name = req.query.name;

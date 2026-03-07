@@ -49,6 +49,14 @@ export function formatNumber(n) {
   return n.toLocaleString();
 }
 
+export function formatCost(n) {
+  if (n == null || n === 0) return '$0';
+  if (n < 0.01) return '<$0.01';
+  if (n >= 1000) return '$' + (n / 1000).toFixed(1) + 'K';
+  if (n >= 100) return '$' + Math.round(n);
+  return '$' + n.toFixed(2);
+}
+
 export function formatDate(ts) {
   if (!ts) return '';
   return new Date(ts).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' });

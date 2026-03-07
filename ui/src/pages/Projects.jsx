@@ -3,8 +3,8 @@ import { Chart as ChartJS, ArcElement, Tooltip, Legend, CategoryScale, LinearSca
 import { Doughnut, Bar } from 'react-chartjs-2'
 import { Search, ChevronRight } from 'lucide-react'
 import { useNavigate } from 'react-router-dom'
-import { fetchProjects } from '../lib/api'
-import { editorColor, editorLabel, formatNumber, formatDate, dateRangeToApiParams } from '../lib/constants'
+import { fetchProjects, fetchCosts } from '../lib/api'
+import { editorColor, editorLabel, formatNumber, formatCost, formatDate, dateRangeToApiParams } from '../lib/constants'
 import { useTheme } from '../lib/theme'
 import KpiCard from '../components/KpiCard'
 import DateRangePicker from '../components/DateRangePicker'
@@ -23,11 +23,16 @@ export default function Projects({ overview }) {
   const [search, setSearch] = useState('')
   const [editorFilter, setEditorFilter] = useState('')
   const [dateRange, setDateRange] = useState(null)
+  const [costs, setCosts] = useState(null)
   const navigate = useNavigate()
   const editors = overview?.editors || []
 
   useEffect(() => {
-    fetchProjects(dateRangeToApiParams(dateRange)).then(setProjects)
+    const dateParams = dateRangeToApiParams(dateRange)
+    Promise.all([
+      fetchProjects(dateParams),
+      fetchCosts(dateParams),
+    ]).then(([p, c]) => { setProjects(p); setCosts(c) })
   }, [dateRange])
 
   if (!projects) return <div className="text-sm py-12 text-center" style={{ color: 'var(--c-text2)' }}>loading projects...</div>
@@ -56,11 +61,12 @@ export default function Projects({ overview }) {
   return (
     <div className="fade-in space-y-5">
       {/* KPIs */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3">
         <KpiCard label="projects" value={projects.length} />
-        <KpiCard label="total sessions" value={formatNumber(totalSessions)} />
-        <KpiCard label="total messages" value={formatNumber(totalMessages)} />
-        <KpiCard label="total tokens" value={formatNumber(totalTokens)} />
+        <KpiCard label="sessions" value={formatNumber(totalSessions)} />
+        <KpiCard label="messages" value={formatNumber(totalMessages)} />
+        <KpiCard label="tokens" value={formatNumber(totalTokens)} />
+        <KpiCard label="est. cost" value={costs && costs.totalCost > 0 ? formatCost(costs.totalCost) : '—'} />
       </div>
 
       {/* Global model & editor breakdown */}

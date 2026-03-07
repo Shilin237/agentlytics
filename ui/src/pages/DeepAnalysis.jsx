@@ -2,8 +2,8 @@ import { useState, useEffect, useRef } from 'react'
 import { Chart as ChartJS, ArcElement, Tooltip, Legend, CategoryScale, LinearScale, BarElement } from 'chart.js'
 import { Doughnut, Bar } from 'react-chartjs-2'
 import { Loader2, X } from 'lucide-react'
-import { fetchDeepAnalytics, fetchToolCalls } from '../lib/api'
-import { editorLabel, editorColor, formatNumber, formatDateTime, dateRangeToApiParams } from '../lib/constants'
+import { fetchDeepAnalytics, fetchToolCalls, fetchCosts } from '../lib/api'
+import { editorLabel, editorColor, formatNumber, formatCost, formatDateTime, dateRangeToApiParams } from '../lib/constants'
 import { useTheme } from '../lib/theme'
 import KpiCard from '../components/KpiCard'
 import DateRangePicker from '../components/DateRangePicker'
@@ -143,6 +143,7 @@ export default function DeepAnalysis({ overview }) {
   const [data, setData] = useState(null)
   const [loading, setLoading] = useState(false)
   const [selectedTool, setSelectedTool] = useState(null)
+  const [costs, setCosts] = useState(null)
   const chartRef = useRef(null)
   const { dark } = useTheme()
   const txtColor = dark ? '#a0a0a0' : '#444'
@@ -155,8 +156,13 @@ export default function DeepAnalysis({ overview }) {
 
   async function analyze() {
     setLoading(true)
-    const result = await fetchDeepAnalytics({ editor, folder: folder || undefined, limit: 500, ...dateRangeToApiParams(dateRange) })
+    const dateParams = dateRangeToApiParams(dateRange)
+    const [result, costData] = await Promise.all([
+      fetchDeepAnalytics({ editor, folder: folder || undefined, limit: 500, ...dateParams }),
+      fetchCosts({ editor, folder: folder || undefined, ...dateParams }),
+    ])
     setData(result)
+    setCosts(costData)
     setLoading(false)
   }
 
@@ -207,12 +213,13 @@ export default function DeepAnalysis({ overview }) {
 
       {data && (
         <>
-          <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-2">
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-2">
             <KpiCard label="sessions" value={data.analyzedChats} />
             <KpiCard label="messages" value={formatNumber(data.totalMessages)} />
-            <KpiCard label="tool calls" value={formatNumber(data.totalToolCalls)} />
-            <KpiCard label="input tokens" value={formatNumber(data.totalInputTokens)} sub={data.totalCacheRead > 0 ? `${formatNumber(data.totalCacheRead)} cached` : undefined} />
-            <KpiCard label="output tokens" value={formatNumber(data.totalOutputTokens)} />
+            <KpiCard label="tools" value={formatNumber(data.totalToolCalls)} />
+            <KpiCard label="in tokens" value={formatNumber(data.totalInputTokens)} sub={data.totalCacheRead > 0 ? `${formatNumber(data.totalCacheRead)} cached` : undefined} />
+            <KpiCard label="out tokens" value={formatNumber(data.totalOutputTokens)} />
+            <KpiCard label="est. cost" value={costs && costs.totalCost > 0 ? formatCost(costs.totalCost) : '—'} />
           </div>
 
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-2">

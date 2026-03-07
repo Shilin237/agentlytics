@@ -1,8 +1,8 @@
 import { useState, useEffect } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { ArrowLeft, Download } from 'lucide-react'
-import { fetchChat, BASE } from '../lib/api'
-import { editorColor, editorLabel, formatDateTime, formatNumber } from '../lib/constants'
+import { fetchChat, fetchCosts, BASE } from '../lib/api'
+import { editorColor, editorLabel, formatDateTime, formatNumber, formatCost } from '../lib/constants'
 import KpiCard from '../components/KpiCard'
 import { MessageBubble } from '../components/MessageRenderer'
 
@@ -10,12 +10,14 @@ export default function ChatDetail() {
   const { id } = useParams()
   const navigate = useNavigate()
   const [chat, setChat] = useState(null)
+  const [costs, setCosts] = useState(null)
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
     setLoading(true)
     fetchChat(id).then(data => {
       setChat(data)
+      fetchCosts({ chatId: data.id }).then(setCosts)
       setLoading(false)
     })
   }, [id])
@@ -76,6 +78,7 @@ export default function ChatDetail() {
           <KpiCard label="Tool Calls" value={s.toolCalls.length} />
           {s.totalInputTokens > 0 && <KpiCard label="Input Tokens" value={formatNumber(s.totalInputTokens)} />}
           {s.totalOutputTokens > 0 && <KpiCard label="Output Tokens" value={formatNumber(s.totalOutputTokens)} />}
+          {costs && costs.totalCost > 0 && <KpiCard label="Est. Cost" value={formatCost(costs.totalCost)} />}
         </div>
       )}
 

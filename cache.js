@@ -3,6 +3,7 @@ const path = require('path');
 const os = require('os');
 const fs = require('fs');
 const { getAllChats, getMessages, findChat: findChatRaw, resetCaches } = require('./editors');
+const { calculateCost, getModelPricing, normalizeModelName } = require('./pricing');
 
 const CACHE_DIR = path.join(os.homedir(), '.agentlytics');
 const CACHE_DB = path.join(CACHE_DIR, 'cache.db');
@@ -849,6 +850,87 @@ function getCachedDashboardStats(opts = {}) {
   };
 }
 
+// ============================================================
+// Cost estimation
+// ============================================================
+
+function estimateCosts(whereClause = '', params = []) {
+  // Per-model token usage from messages table
+  const modelTokens = db.prepare(`
+    SELECT m.model, SUM(m.input_tokens) as input, SUM(m.output_tokens) as output
+    FROM messages m JOIN chats c ON m.chat_id = c.id
+    WHERE m.model IS NOT NULL AND (m.input_tokens > 0 OR m.output_tokens > 0)${whereClause}
+    GROUP BY m.model
+  `).all(...params);
+
+  // Cache tokens per session with dominant model
+  const cacheRows = db.prepare(`
+    SELECT cs.total_cache_read, cs.total_cache_write, cs.models
+    FROM chat_stats cs JOIN chats c ON cs.chat_id = c.id
+    WHERE (cs.total_cache_read > 0 OR cs.total_cache_write > 0)${whereClause}
+  `).all(...params);
+
+  // Aggregate cache tokens by dominant model
+  const cacheByModel = {};
+  for (const r of cacheRows) {
+    let models;
+    try { models = JSON.parse(r.models || '[]'); } catch { continue; }
+    if (models.length === 0) continue;
+    // Use most frequent model in session
+    const freq = {};
+    for (const m of models) freq[m] = (freq[m] || 0) + 1;
+    const dominant = Object.entries(freq).sort((a, b) => b[1] - a[1])[0][0];
+    if (!cacheByModel[dominant]) cacheByModel[dominant] = { cacheRead: 0, cacheWrite: 0 };
+    cacheByModel[dominant].cacheRead += r.total_cache_read;
+    cacheByModel[dominant].cacheWrite += r.total_cache_write;
+  }
+
+  let totalCost = 0;
+  let knownCost = 0;
+  let unknownModels = [];
+  const byModel = [];
+
+  for (const row of modelTokens) {
+    const cache = cacheByModel[row.model] || { cacheRead: 0, cacheWrite: 0 };
+    const cost = calculateCost(row.model, row.input, row.output, cache.cacheRead, cache.cacheWrite);
+    const normalized = normalizeModelName(row.model);
+    if (cost !== null) {
+      knownCost += cost;
+      totalCost += cost;
+      byModel.push({ model: row.model, inputTokens: row.input, outputTokens: row.output, cacheRead: cache.cacheRead, cacheWrite: cache.cacheWrite, cost });
+    } else {
+      unknownModels.push(row.model);
+    }
+  }
+
+  // Handle cache tokens for models that had cache but no message-level tokens
+  for (const [model, cache] of Object.entries(cacheByModel)) {
+    if (!modelTokens.find(r => r.model === model)) {
+      const cost = calculateCost(model, 0, 0, cache.cacheRead, cache.cacheWrite);
+      if (cost !== null) {
+        totalCost += cost;
+        byModel.push({ model, inputTokens: 0, outputTokens: 0, cacheRead: cache.cacheRead, cacheWrite: cache.cacheWrite, cost });
+      }
+    }
+  }
+
+  byModel.sort((a, b) => b.cost - a.cost);
+  unknownModels = [...new Set(unknownModels)];
+
+  return { totalCost, byModel, unknownModels };
+}
+
+function getCostBreakdown(opts = {}) {
+  let whereClause = '';
+  const params = [];
+  if (opts.editor) { whereClause += ' AND c.source LIKE ?'; params.push(`%${opts.editor}%`); }
+  if (opts.folder) { whereClause += ' AND c.folder = ?'; params.push(opts.folder); }
+  if (opts.dateFrom) { whereClause += ' AND COALESCE(c.last_updated_at, c.created_at) >= ?'; params.push(opts.dateFrom); }
+  if (opts.dateTo) { whereClause += ' AND COALESCE(c.last_updated_at, c.created_at) <= ?'; params.push(opts.dateTo); }
+  if (opts.chatId) { whereClause += ' AND c.id = ?'; params.push(opts.chatId); }
+  return estimateCosts(whereClause, params);
+}
+
 function getDb() { return db; }
 
 module.exports = {
@@ -865,5 +947,6 @@ module.exports = {
   resetAndRescan,
   resetAndRescanAsync,
   getCachedDashboardStats,
+  getCostBreakdown,
   getDb,
 };

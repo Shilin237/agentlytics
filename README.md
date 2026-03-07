@@ -179,7 +179,7 @@ All endpoints accept optional `editor` filter. See **[API.md](API.md)** for full
 - [ ] **LLM-powered insights** — Use an LLM to analyze session patterns, generate summaries, detect coding habits, and surface actionable recommendations
 - [ ] **Linux & Windows support** — Adapt editor paths for non-macOS platforms
 - [ ] **Export & reports** — PDF/CSV export of analytics and session data
-- [ ] **Cost tracking** — Estimate API costs per editor/model based on token usage
+- [x] **Cost tracking** — Estimate API costs per editor/model based on token usage
 
 ## Contributions Needed
 

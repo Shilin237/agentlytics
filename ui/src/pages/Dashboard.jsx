@@ -6,8 +6,8 @@ import { Doughnut, Bar, Line } from 'react-chartjs-2'
 import KpiCard from '../components/KpiCard'
 import ActivityHeatmap from '../components/ActivityHeatmap'
 import DateRangePicker from '../components/DateRangePicker'
-import { editorColor, editorLabel, formatNumber, dateRangeToApiParams } from '../lib/constants'
-import { fetchDailyActivity, fetchOverview as fetchOverviewApi, fetchDashboardStats, fetchShareImage } from '../lib/api'
+import { editorColor, editorLabel, formatNumber, formatCost, dateRangeToApiParams } from '../lib/constants'
+import { fetchDailyActivity, fetchOverview as fetchOverviewApi, fetchDashboardStats, fetchShareImage, fetchCosts } from '../lib/api'
 import { useTheme } from '../lib/theme'
 import SectionTitle from '../components/SectionTitle'
 
@@ -29,6 +29,7 @@ export default function Dashboard({ overview }) {
   const [selectedEditor, setSelectedEditor] = useState(null)
   const [dateRange, setDateRange] = useState(null)
   const { dark } = useTheme()
+  const [costs, setCosts] = useState(null)
   const [sharing, setSharing] = useState(false)
   const txtColor = dark ? '#888' : '#555'
   const txtDim = dark ? '#555' : '#999'
@@ -54,16 +55,19 @@ export default function Dashboard({ overview }) {
       setFilteredData(null)
       fetchDailyActivity(dateParams).then(setDailyData)
       fetchDashboardStats(dateParams).then(setStats)
+      fetchCosts(dateParams).then(setCosts)
       return
     }
     Promise.all([
       fetchOverviewApi({ editor: selectedEditor, ...dateParams }),
       fetchDailyActivity({ editor: selectedEditor, ...dateParams }),
       fetchDashboardStats({ editor: selectedEditor, ...dateParams }),
-    ]).then(([ov, daily, st]) => {
+      fetchCosts({ editor: selectedEditor, ...dateParams }),
+    ]).then(([ov, daily, st, c]) => {
       setFilteredData(ov)
       setDailyData(daily)
       setStats(st)
+      setCosts(c)
     })
   }, [selectedEditor, dateRange])
 
@@ -274,13 +278,14 @@ export default function Dashboard({ overview }) {
 
       {/* Token economy KPIs */}
       {tk && tk.input > 0 && (
-        <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-2">
-          <KpiCard label="input tokens" value={formatNumber(tk.input)} sub="total prompt" />
-          <KpiCard label="output tokens" value={formatNumber(tk.output)} sub="total completion" />
+        <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-7 gap-2">
+          <KpiCard label="in tokens" value={formatNumber(tk.input)} sub="total prompt" />
+          <KpiCard label="out tokens" value={formatNumber(tk.output)} sub="total completion" />
           <KpiCard label="cache read" value={formatNumber(tk.cacheRead)} sub={`${cacheHitRate}% hit rate`} />
           <KpiCard label="cache write" value={formatNumber(tk.cacheWrite)} />
-          <KpiCard label="output/input" value={`${outputInputRatio}×`} sub={<span className="flex items-center gap-0.5"><Zap size={8} /> efficiency ratio</span>} />
+          <KpiCard label="out/in ratio" value={`${outputInputRatio}×`} sub={<span className="flex items-center gap-0.5"><Zap size={8} /> efficiency</span>} />
           <KpiCard label="you wrote" value={formatNumber(tk.userChars)} sub={`AI wrote ${formatNumber(tk.assistantChars)}`} />
+          <KpiCard label="est. cost" value={costs && costs.totalCost > 0 ? formatCost(costs.totalCost) : '—'} sub={costs && costs.byModel.length > 0 ? `${costs.byModel.length} model${costs.byModel.length !== 1 ? 's' : ''}` : undefined} />
         </div>
       )}
 
@@ -411,10 +416,11 @@ export default function Dashboard({ overview }) {
           {/* Top models */}
           {stats.topModels.length > 0 && (
             <div className="card p-3">
-              <SectionTitle>top models</SectionTitle>
+              <SectionTitle>top models {costs && costs.totalCost > 0 && <span style={{ color: 'var(--c-text3)' }}>({formatCost(costs.totalCost)} est.)</span>}</SectionTitle>
               <div className="space-y-1">
                 {stats.topModels.map((m, i) => {
                   const maxM = stats.topModels[0].count
+                  const modelCost = costs?.byModel?.find(c => c.model === m.name)
                   return (
                     <div key={m.name} className="flex items-center gap-2">
                       <span className="text-[9px] w-3 text-right" style={{ color: 'var(--c-text3)' }}>{i + 1}</span>
@@ -423,6 +429,7 @@ export default function Dashboard({ overview }) {
                           <span className="text-[8px] truncate" style={{ color: i < 2 ? '#fff' : 'var(--c-text2)' }}>{m.name}</span>
                         </div>
                       </div>
+                      {modelCost ? <span className="text-[9px] w-12 text-right" style={{ color: '#10b981' }}>{formatCost(modelCost.cost)}</span> : null}
                       <span className="text-[9px] w-8 text-right" style={{ color: 'var(--c-text3)' }}>{m.count}</span>
                     </div>
                   )

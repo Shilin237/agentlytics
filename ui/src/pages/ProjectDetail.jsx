@@ -3,8 +3,8 @@ import { useSearchParams, useNavigate } from 'react-router-dom'
 import { ArrowLeft, Search } from 'lucide-react'
 import { Chart as ChartJS, ArcElement, Tooltip, Legend, CategoryScale, LinearScale, BarElement } from 'chart.js'
 import { Doughnut, Bar } from 'react-chartjs-2'
-import { fetchProjects, fetchChats } from '../lib/api'
-import { editorColor, editorLabel, formatNumber, formatDate } from '../lib/constants'
+import { fetchProjects, fetchChats, fetchCosts } from '../lib/api'
+import { editorColor, editorLabel, formatNumber, formatDate, formatCost } from '../lib/constants'
 import { useTheme } from '../lib/theme'
 import KpiCard from '../components/KpiCard'
 import EditorDot from '../components/EditorDot'
@@ -29,6 +29,7 @@ export default function ProjectDetail() {
   const [loading, setLoading] = useState(true)
   const [chatSearch, setChatSearch] = useState('')
   const [selectedChatId, setSelectedChatId] = useState(null)
+  const [costs, setCosts] = useState(null)
 
   useEffect(() => {
     if (!folder) return
@@ -36,10 +37,12 @@ export default function ProjectDetail() {
     Promise.all([
       fetchProjects(),
       fetchChats({ folder, limit: 1000 }),
-    ]).then(([projects, chatData]) => {
+      fetchCosts({ folder }),
+    ]).then(([projects, chatData, costData]) => {
       const match = projects.find(p => p.folder === folder)
       setProject(match || null)
       setChats(chatData.chats || [])
+      setCosts(costData)
       setLoading(false)
     })
   }, [folder])
@@ -79,13 +82,14 @@ export default function ProjectDetail() {
       </div>
 
       {/* KPIs */}
-      <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-3">
+      <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-7 gap-3">
         <KpiCard label="sessions" value={project.totalSessions} />
         <KpiCard label="messages" value={formatNumber(project.totalMessages)} />
-        <KpiCard label="tool calls" value={formatNumber(project.totalToolCalls)} />
-        <KpiCard label="input tokens" value={formatNumber(project.totalInputTokens)} />
-        <KpiCard label="output tokens" value={formatNumber(project.totalOutputTokens)} />
+        <KpiCard label="tools" value={formatNumber(project.totalToolCalls)} />
+        <KpiCard label="in tokens" value={formatNumber(project.totalInputTokens)} />
+        <KpiCard label="out tokens" value={formatNumber(project.totalOutputTokens)} />
         <KpiCard label="active since" value={formatDate(project.firstSeen)} />
+        <KpiCard label="est. cost" value={costs && costs.totalCost > 0 ? formatCost(costs.totalCost) : '—'} sub={costs && costs.byModel.length > 0 ? `${costs.byModel.length} model${costs.byModel.length !== 1 ? 's' : ''}` : undefined} />
       </div>
 
       {/* Charts row */}

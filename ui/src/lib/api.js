@@ -127,6 +127,17 @@ export async function fetchDashboardStats(params = {}) {
   return res.json();
 }
 
+export async function fetchCosts(params = {}) {
+  const q = new URLSearchParams();
+  if (params.editor) q.set('editor', params.editor);
+  if (params.folder) q.set('folder', params.folder);
+  if (params.chatId) q.set('chatId', params.chatId);
+  appendDateParams(q, params);
+  const qs = q.toString();
+  const res = await fetch(`${BASE}/api/costs${qs ? '?' + qs : ''}`);
+  return res.json();
+}
+
 export async function executeQuery(sql) {
   const res = await fetch(`${BASE}/api/query`, {
     method: 'POST',
