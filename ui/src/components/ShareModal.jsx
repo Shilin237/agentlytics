@@ -104,7 +104,7 @@ export default function ShareModal({ open, onClose }) {
 
   const handleShareTwitter = async () => {
     await handleDownloadPng()
-    const text = encodeURIComponent("Here's my agentic coding stats using github.com/f/agentlytics")
+    const text = encodeURIComponent("Here's my agentic coding stats using agentlytics.io\n\nrun `npx agentlytics` to get yours ✨\n\ngithub.com/f/agentlytics")
     window.open(`https://x.com/intent/post?text=${text}`, '_blank')
   }
 
