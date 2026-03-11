@@ -425,4 +425,12 @@ function getArtifacts(folder) {
   });
 }
 
-module.exports = { name, labels, getChats, getMessages, getUsage, getArtifacts };
+function getMCPServers() {
+  const { parseMcpConfigFile } = require('./base');
+  const globalConfig = path.join(HOME, '.cursor', 'mcp.json');
+  return [
+    ...parseMcpConfigFile(globalConfig, { editor: 'cursor', label: 'Cursor', scope: 'global' }),
+  ];
+}
+
+module.exports = { name, labels, getChats, getMessages, getUsage, getArtifacts, getMCPServers };

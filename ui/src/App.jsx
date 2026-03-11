@@ -17,6 +17,7 @@ import SqlViewer from './pages/SqlViewer'
 import Artifacts from './pages/Artifacts'
 import Settings from './pages/Settings'
 import Subscriptions from './pages/Subscriptions'
+import MCPs from './pages/MCPs'
 import RelayDashboard from './pages/RelayDashboard'
 import RelayUserDetail from './pages/RelayUserDetail'
 
@@ -148,6 +149,7 @@ export default function App() {
       { to: '/compare', icon: GitCompare, label: 'Compare' },
     ]},
     { to: '/artifacts', icon: Package, label: 'Artifacts' },
+    { to: '/mcps', icon: Plug, label: 'MCPs' },
     { to: '/sql', icon: Database, label: 'SQL' },
   ]
 
@@ -275,6 +277,7 @@ export default function App() {
             <Route path="/compare" element={<Compare overview={overview} />} />
             <Route path="/subscriptions" element={<Subscriptions />} />
             <Route path="/artifacts" element={<Artifacts />} />
+            <Route path="/mcps" element={<MCPs />} />
             <Route path="/sql" element={<SqlViewer />} />
             <Route path="/settings" element={<Settings />} />
           </Routes>

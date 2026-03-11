@@ -282,6 +282,11 @@ const BOT_STYLES = [
   const http = require('http');
   const net = require('net');
 
+  // Pre-cache MCP server tool lists (runs in background, non-blocking)
+  app.initMcpToolsCache().then(() => {
+    console.log(chalk.green('  ✓ MCP tools cached'));
+  }).catch(() => {});
+
   function isPortFree(port) {
     return new Promise((resolve) => {
       const tester = net.createServer()

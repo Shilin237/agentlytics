@@ -1005,4 +1005,13 @@ function getArtifacts(folder) {
   return artifacts;
 }
 
-module.exports = { name, labels, getChats, getMessages, resetCache, getUsage, getArtifacts };
+function getMCPServers() {
+  const { parseMcpConfigFile } = require('./base');
+  // Antigravity uses similar config to Windsurf: ~/.codeium/antigravity/mcp_config.json
+  const globalConfig = path.join(HOME, '.codeium', 'antigravity', 'mcp_config.json');
+  return [
+    ...parseMcpConfigFile(globalConfig, { editor: 'antigravity', label: 'Antigravity', scope: 'global' }),
+  ];
+}
+
+module.exports = { name, labels, getChats, getMessages, resetCache, getUsage, getArtifacts, getMCPServers };

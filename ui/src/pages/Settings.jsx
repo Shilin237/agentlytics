@@ -5,6 +5,7 @@ import { editorLabel, formatNumber, formatDate } from '../lib/constants'
 import EditorIcon from '../components/EditorIcon'
 import SectionTitle from '../components/SectionTitle'
 import AnimatedLoader from '../components/AnimatedLoader'
+import PageHeader from '../components/PageHeader'
 
 export default function Settings() {
   const [config, setConfig] = useState(null)
@@ -47,11 +48,8 @@ export default function Settings() {
   const sorted = [...filtered].sort((a, b) => a.name.localeCompare(b.name))
 
   return (
-    <div className="fade-in space-y-4">
-      <div className="flex items-center gap-1.5 text-[13px] font-bold" style={{ color: 'var(--c-white)' }}>
-        <SettingsIcon size={14} style={{ color: '#6366f1' }} />
-        Settings
-      </div>
+    <div className="fade-in space-y-3">
+      <PageHeader icon={SettingsIcon} title="Settings" />
 
       <div className="card overflow-hidden">
         <div className="px-3 py-2 flex items-center justify-between" style={{ borderBottom: '1px solid var(--c-border)' }}>

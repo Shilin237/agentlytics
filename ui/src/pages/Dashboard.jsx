@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { ArrowRight, X, Flame, Zap, MessageSquare, Wrench, Share2, AlertTriangle } from 'lucide-react'
+import { ArrowRight, X, Flame, Zap, MessageSquare, Wrench, Share2, AlertTriangle, LayoutDashboard } from 'lucide-react'
 import { Chart as ChartJS, ArcElement, Tooltip, Legend, CategoryScale, LinearScale, BarElement, PointElement, LineElement, Filler } from 'chart.js'
 import { Doughnut, Bar, Line } from 'react-chartjs-2'
 import KpiCard from '../components/KpiCard'
@@ -14,6 +14,7 @@ import AnimatedLoader from '../components/AnimatedLoader'
 import ShareModal from '../components/ShareModal'
 import { useTheme } from '../lib/theme'
 import SectionTitle from '../components/SectionTitle'
+import PageHeader from '../components/PageHeader'
 
 ChartJS.register(ArcElement, Tooltip, Legend, CategoryScale, LinearScale, BarElement, PointElement, LineElement, Filler)
 
@@ -175,17 +176,19 @@ export default function Dashboard({ overview }) {
   return (
     <div className="fade-in space-y-3">
       {/* Top bar */}
-      <div className="flex items-center justify-end gap-3">
-        <DateRangePicker value={dateRange} onChange={setDateRange} />
-        <button
-          onClick={() => setShareOpen(true)}
-          className="flex items-center gap-1.5 px-3 py-1 text-[12px] rounded-md transition hover:opacity-80"
-          style={{ background: '#6366f1', color: '#fff' }}
-        >
-          <Share2 size={12} />
-          Share Stats
-        </button>
-      </div>
+      <PageHeader icon={LayoutDashboard} title="Dashboard">
+        <div className="ml-auto flex items-center gap-3">
+          <DateRangePicker value={dateRange} onChange={setDateRange} />
+          <button
+            onClick={() => setShareOpen(true)}
+            className="flex items-center gap-1.5 px-3 py-1 text-[12px] rounded-md transition hover:opacity-80"
+            style={{ background: '#6366f1', color: '#fff' }}
+          >
+            <Share2 size={12} />
+            Share Stats
+          </button>
+        </div>
+      </PageHeader>
 
       {/* Editor breakdown - compact row */}
       <div className="card p-3">

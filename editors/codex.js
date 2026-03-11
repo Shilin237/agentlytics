@@ -519,6 +519,11 @@ function getArtifacts(folder) {
   });
 }
 
+function getMCPServers() {
+  // Codex doesn't have native MCP server configuration
+  return [];
+}
+
 module.exports = {
   name,
   labels,
@@ -526,4 +531,5 @@ module.exports = {
   getChats,
   getMessages,
   getUsage,
+  getMCPServers,
 };

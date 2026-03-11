@@ -9,6 +9,7 @@ import KpiCard from '../components/KpiCard'
 import EditorIcon from '../components/EditorIcon'
 import SectionTitle from '../components/SectionTitle'
 import DateRangePicker from '../components/DateRangePicker'
+import PageHeader from '../components/PageHeader'
 
 ChartJS.register(ArcElement, Tooltip, Legend, CategoryScale, LinearScale, BarElement)
 
@@ -247,13 +248,13 @@ export default function DeepAnalysis({ overview }) {
   }
 
   return (
-    <div className="fade-in space-y-4">
+    <div className="fade-in space-y-3">
       {/* Filters */}
-      <div className="flex items-center gap-2">
+      <PageHeader icon={TrendingUp} title="Deep Analysis">
         <select
           value={editor}
           onChange={e => setEditor(e.target.value)}
-          className="px-2 py-1.5 text-[12px] outline-none rounded-sm"
+          className="px-2 py-1 text-[12px] outline-none"
           style={{ background: 'var(--c-bg3)', color: 'var(--c-text)', border: '1px solid var(--c-border)' }}
         >
           <option value="">All Editors</option>
@@ -264,7 +265,7 @@ export default function DeepAnalysis({ overview }) {
         <select
           value={folder}
           onChange={e => setFolder(e.target.value)}
-          className="px-2 py-1.5 text-[12px] outline-none max-w-[200px] truncate rounded-sm"
+          className="px-2 py-1 text-[12px] outline-none max-w-[200px] truncate"
           style={{ background: 'var(--c-bg3)', color: 'var(--c-text)', border: '1px solid var(--c-border)' }}
         >
           <option value="">All Projects</option>
@@ -275,7 +276,7 @@ export default function DeepAnalysis({ overview }) {
         {loading && <Loader2 size={11} className="animate-spin" style={{ color: 'var(--c-text3)' }} />}
         {data && <span className="text-[11px]" style={{ color: 'var(--c-text2)' }}>{data.analyzedChats} sessions analyzed</span>}
         <div className="ml-auto"><DateRangePicker value={dateRange} onChange={setDateRange} /></div>
-      </div>
+      </PageHeader>
 
       {data && insights && (
         <>

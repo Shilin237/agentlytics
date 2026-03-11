@@ -313,4 +313,35 @@ function getMessages(chat) {
 
 const labels = { 'opencode': 'OpenCode' };
 
-module.exports = { name, labels, getChats, getMessages };
+function getMCPServers() {
+  const { parseMcpConfigFile } = require('./base');
+  // OpenCode: ~/.config/opencode/opencode.json (mcp key maps to mcpServers format)
+  const globalConfig = path.join(os.homedir(), '.config', 'opencode', 'opencode.json');
+  const results = [];
+  if (fs.existsSync(globalConfig)) {
+    try {
+      const data = JSON.parse(fs.readFileSync(globalConfig, 'utf-8'));
+      const servers = data.mcp || {};
+      for (const [name, cfg] of Object.entries(servers)) {
+        if (typeof cfg !== 'object') continue;
+        results.push({
+          name,
+          editor: 'opencode',
+          editorLabel: 'OpenCode',
+          scope: 'global',
+          configPath: globalConfig,
+          command: cfg.command || null,
+          args: cfg.args || [],
+          env: cfg.env ? Object.keys(cfg.env) : [],
+          url: cfg.url || null,
+          transport: cfg.type || (cfg.url ? 'http' : 'stdio'),
+          disabled: false,
+          disabledTools: [],
+        });
+      }
+    } catch {}
+  }
+  return results;
+}
+
+module.exports = { name, labels, getChats, getMessages, getMCPServers };

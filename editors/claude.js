@@ -311,4 +311,14 @@ function getArtifacts(folder) {
   });
 }
 
-module.exports = { name, labels, getChats, getMessages, getUsage, getArtifacts };
+function getMCPServers() {
+  const { parseMcpConfigFile } = require('./base');
+  const results = [];
+  // Global: ~/.claude.json (has mcpServers key)
+  const globalFile = path.join(os.homedir(), '.claude.json');
+  results.push(...parseMcpConfigFile(globalFile, { editor: 'claude-code', label: 'Claude Code', scope: 'global' }));
+  // Project-level: .mcp.json (scanned per-project later via getAllMCPServers)
+  return results;
+}
+
+module.exports = { name, labels, getChats, getMessages, getUsage, getArtifacts, getMCPServers };
