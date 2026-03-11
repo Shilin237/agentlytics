@@ -277,20 +277,50 @@ const BOT_STYLES = [
     process.exit(0);
   }
 
-  // Start server
+  // Start server (kill stale agentlytics if port is busy)
   const app = require('./server');
-  app.listen(PORT, () => {
-    const url = `http://localhost:${PORT}`;
-    console.log(chalk.green(`  ✓ Dashboard ready at ${chalk.bold.white(url)}`));
-    console.log('');
-    console.log(chalk.dim('  💡 Share sessions with your team:'));
-    console.log(chalk.dim(`     npx agentlytics --relay                        Start a relay server`));
-    console.log(chalk.dim(`     npx agentlytics --join <host:port> --username   Join a relay server`));
-    console.log('');
-    console.log(chalk.dim('  Press Ctrl+C to stop\n'));
+  const http = require('http');
 
-    // Auto-open browser
-    const open = require('open');
-    open(url).catch(() => {});
-  });
+  function tryListen() {
+    app.listen(PORT, () => {
+      const url = `http://localhost:${PORT}`;
+      console.log(chalk.green(`  ✓ Dashboard ready at ${chalk.bold.white(url)}`));
+      console.log('');
+      console.log(chalk.dim('  Press Ctrl+C to stop\n'));
+
+      // Auto-open browser
+      const open = require('open');
+      open(url).catch(() => {});
+    }).on('error', (err) => {
+      if (err.code !== 'EADDRINUSE') throw err;
+
+      // Port in use — check if it's a previous agentlytics instance
+      const req = http.get(`http://localhost:${PORT}/api/ping`, { timeout: 2000 }, (res) => {
+        let body = '';
+        res.on('data', (d) => body += d);
+        res.on('end', () => {
+          try {
+            const data = JSON.parse(body);
+            if (data.app === 'agentlytics' && data.pid) {
+              console.log(chalk.yellow(`  ⟳ Killing previous Agentlytics instance (PID ${data.pid})...`));
+              try { process.kill(data.pid, 'SIGTERM'); } catch {}
+              setTimeout(tryListen, 1000);
+            } else {
+              console.error(chalk.red(`  ✖ Port ${PORT} is in use by another application.`));
+              process.exit(1);
+            }
+          } catch {
+            console.error(chalk.red(`  ✖ Port ${PORT} is in use by another application.`));
+            process.exit(1);
+          }
+        });
+      });
+      req.on('error', () => {
+        console.error(chalk.red(`  ✖ Port ${PORT} is in use but not responding. Kill the process manually or use PORT=<n> env.`));
+        process.exit(1);
+      });
+    });
+  }
+
+  tryListen();
 })();
