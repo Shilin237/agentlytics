@@ -27,7 +27,7 @@ RUN apk add --no-cache dumb-init
 
 # Copy from builder
 COPY --from=builder /app/node_modules ./node_modules
-COPY --from=builder /app/public ./public
+COPY --from=builder /app/ui/dist ./public
 COPY --from=builder /app/package*.json ./
 
 # Copy all source files
