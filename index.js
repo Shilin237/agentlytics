@@ -334,8 +334,18 @@ const BOT_STYLES = [
   try { agentConfig = JSON.parse(fs.readFileSync(CONFIG_FILE, 'utf-8')); } catch {}
 
   if (agentConfig.allowSubscriptionAccess === undefined) {
-    console.log(chalk.yellow('  ⚠ Subscription & usage details require access to local auth tokens.'));
-    console.log('');
+    if (process.env.AGENTLYTICS_ALLOW_SUBSCRIPTION !== undefined) {
+      agentConfig.allowSubscriptionAccess = process.env.AGENTLYTICS_ALLOW_SUBSCRIPTION.toLowerCase() === 'true';
+      if (!fs.existsSync(CONFIG_DIR)) fs.mkdirSync(CONFIG_DIR, { recursive: true });
+      fs.writeFileSync(CONFIG_FILE, JSON.stringify(agentConfig, null, 2));
+    } else if (!process.stdin.isTTY) {
+      // Non-interactive container environment (Railway), default to no token access
+      agentConfig.allowSubscriptionAccess = false;
+      if (!fs.existsSync(CONFIG_DIR)) fs.mkdirSync(CONFIG_DIR, { recursive: true });
+      fs.writeFileSync(CONFIG_FILE, JSON.stringify(agentConfig, null, 2));
+    } else {
+      console.log(chalk.yellow('  ⚠ Subscription & usage details require access to local auth tokens.'));
+      console.log('');
     console.log(chalk.dim('    To show your plan and usage info, Agentlytics needs to read'));
     console.log(chalk.dim('    locally stored tokens from the following sources:'));
     console.log('');
