@@ -336,49 +336,49 @@ const BOT_STYLES = [
   if (agentConfig.allowSubscriptionAccess === undefined) {
     if (process.env.AGENTLYTICS_ALLOW_SUBSCRIPTION !== undefined) {
       agentConfig.allowSubscriptionAccess = process.env.AGENTLYTICS_ALLOW_SUBSCRIPTION.toLowerCase() === 'true';
-      if (!fs.existsSync(CONFIG_DIR)) fs.mkdirSync(CONFIG_DIR, { recursive: true });
-      fs.writeFileSync(CONFIG_FILE, JSON.stringify(agentConfig, null, 2));
     } else if (!process.stdin.isTTY) {
       // Non-interactive container environment (Railway), default to no token access
       agentConfig.allowSubscriptionAccess = false;
-      if (!fs.existsSync(CONFIG_DIR)) fs.mkdirSync(CONFIG_DIR, { recursive: true });
-      fs.writeFileSync(CONFIG_FILE, JSON.stringify(agentConfig, null, 2));
     } else {
       console.log(chalk.yellow('  ⚠ Subscription & usage details require access to local auth tokens.'));
       console.log('');
-    console.log(chalk.dim('    To show your plan and usage info, Agentlytics needs to read'));
-    console.log(chalk.dim('    locally stored tokens from the following sources:'));
-    console.log('');
-    console.log(chalk.dim('      • Claude Code  – macOS Keychain / Linux secret-tool'));
-    console.log(chalk.dim('      • Cursor       – local SQLite (state.vscdb)'));
-    console.log(chalk.dim('      • Copilot      – ~/.config/github-copilot/apps.json'));
-    console.log(chalk.dim('      • VS Code      – ~/.config/github-copilot/apps.json'));
-    console.log(chalk.dim('      • Codex        – local auth.json (JWT decode only)'));
-    console.log(chalk.dim('      • Windsurf     – local SQLite (state.vscdb)'));
-    console.log('');
-    console.log(chalk.dim('    These tokens are used to query each editor\'s own API for'));
-    console.log(chalk.dim('    your plan name and usage limits.'));
-    console.log('');
-    console.log(chalk.bold.white('    → Tokens are kept in-memory only and never sent to any'));
-    console.log(chalk.bold.white('      third-party service. They are discarded after the request.'));
-    console.log('');
-    const readline = require('readline');
-    const rl = readline.createInterface({ input: process.stdin, output: process.stdout });
-    const answer = await new Promise(r => {
-      rl.question(chalk.bold('  Allow local token inspection for subscription details? (y/N) '), (a) => {
-        rl.close();
-        r(a.trim().toLowerCase());
+      console.log(chalk.dim('    To show your plan and usage info, Agentlytics needs to read'));
+      console.log(chalk.dim('    locally stored tokens from the following sources:'));
+      console.log('');
+      console.log(chalk.dim('      • Claude Code  – macOS Keychain / Linux secret-tool'));
+      console.log(chalk.dim('      • Cursor       – local SQLite (state.vscdb)'));
+      console.log(chalk.dim('      • Copilot      – ~/.config/github-copilot/apps.json'));
+      console.log(chalk.dim('      • VS Code      – ~/.config/github-copilot/apps.json'));
+      console.log(chalk.dim('      • Codex        – local auth.json (JWT decode only)'));
+      console.log(chalk.dim('      • Windsurf     – local SQLite (state.vscdb)'));
+      console.log('');
+      console.log(chalk.dim('    These tokens are used to query each editor\'s own API for'));
+      console.log(chalk.dim('    your plan name and usage limits.'));
+      console.log('');
+      console.log(chalk.bold.white('    → Tokens are kept in-memory only and never sent to any'));
+      console.log(chalk.bold.white('      third-party service. They are discarded after the request.'));
+      console.log('');
+
+      const readline = require('readline');
+      const rl = readline.createInterface({ input: process.stdin, output: process.stdout });
+      const answer = await new Promise(r => {
+        rl.question(chalk.bold('  Allow local token inspection for subscription details? (y/N) '), (a) => {
+          rl.close();
+          r(a.trim().toLowerCase());
+        });
       });
-    });
-    agentConfig.allowSubscriptionAccess = answer === 'y' || answer === 'yes';
+
+      agentConfig.allowSubscriptionAccess = answer === 'y' || answer === 'yes';
+      if (agentConfig.allowSubscriptionAccess) {
+        console.log(chalk.green('  ✓ Subscription access enabled'));
+      } else {
+        console.log(chalk.dim('  – Subscription access skipped (plan/usage details won\'t be collected)'));
+      }
+      console.log('');
+    }
+
     if (!fs.existsSync(CONFIG_DIR)) fs.mkdirSync(CONFIG_DIR, { recursive: true });
     fs.writeFileSync(CONFIG_FILE, JSON.stringify(agentConfig, null, 2));
-    if (agentConfig.allowSubscriptionAccess) {
-      console.log(chalk.green('  ✓ Subscription access enabled'));
-    } else {
-      console.log(chalk.dim('  – Subscription access skipped (plan/usage details won\'t be collected)'));
-    }
-    console.log('');
   }
 
   let tick = 0;
